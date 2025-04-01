@@ -6,7 +6,7 @@ ___
 
 ___
 
-###### _why : learn more python, learn without MATLAB limited triad, easier to relate to ML and AI, python is free_<p>
+###### _why : learn more python, learn without MATLAB limited trial, easier to relate to ML and AI, python is free_<p>
 
 ### building blocks
 + LiDAR
