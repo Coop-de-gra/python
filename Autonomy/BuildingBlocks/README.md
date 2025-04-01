@@ -5,3 +5,12 @@ ___
 🥉 my hope is that this will help me understand the basics and have a repo of tools that I can use and call into future projects <p>
 
 ___
+
+## building blocks
++ LiDAR
++ path algorithms
++ mapping
++ PID controller
++ object detection
++ localization
++ 
