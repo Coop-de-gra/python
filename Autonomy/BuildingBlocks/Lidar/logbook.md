@@ -1,5 +1,11 @@
 ***
 
+got a nice code snippet from GPT that achieved exactly what I needed and wanted to do<p>
+but thats called "vibe coding" and can only go so far<p>
+so now I really need to dig deep, behave how I was when I had coding turned off in MATLAB, and figure it out<p
+
+***
+
 installed packeges within the venv in pycharm (matplotlib, numpy, shapely) <p>
 [matplotlib](https://matplotlib.org/stable/): creating static, animated, and interactive visualizations <p>
 [numpy](https://numpy.org/devdocs/): scientific computing and provides support for multi-dimensional arrays <p>
