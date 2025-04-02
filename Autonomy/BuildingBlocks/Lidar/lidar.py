@@ -92,6 +92,7 @@ if __name__ == "__main__":
     obstacles = [
         {"type": "circle", "center": (2000, 1000), "radius": 500},
         {"type": "circle", "center": (-1500, -1500), "radius": 700},
+        {"type": "circle", "center": (-2000, 2000), "radius": 300},
     ]
 
     # Run the simulation
