@@ -1,69 +1,99 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from shapely.geometry import Point, LineString, Polygon
 
-def simulate_lidar(sensor, angles, obstacles, max_range=10):
-    distances = []
-    ray_points = []  # end points of rays for visualization
+
+def simulate_lidar_scan(num_rays=360, max_distance=5000, obstacles=None):
+    """
+    Simulate a LiDAR scan by casting rays from the origin.
+
+    Parameters:
+        num_rays (int): Number of rays to simulate (angles evenly spaced between 0 and 360 degrees).
+        max_distance (float): Maximum LiDAR range.
+        obstacles (list): List of obstacles; each obstacle is a dict with:
+                          - "type": currently only 'circle'
+                          - "center": (x, y) tuple for circle center
+                          - "radius": radius of the circle
+
+    Returns:
+        list of tuples: Each tuple contains (angle in degrees, measured distance).
+    """
+    if obstacles is None:
+        obstacles = []
+
+    scan_data = []
+    angles = np.linspace(0, 360, num_rays, endpoint=False)
+
     for angle in angles:
-        # Calculate the end point of the ray at maximum range
-        ray_end = Point(sensor.x + max_range * np.cos(angle),
-                        sensor.y + max_range * np.sin(angle))
-        ray = LineString([sensor, ray_end])
-        min_distance = max_range
+        angle_rad = np.deg2rad(angle)
+        distance = max_distance  # default: no obstacle encountered
+
+        # Check for intersection with each obstacle
         for obs in obstacles:
-            inter = ray.intersection(obs)
-            if not inter.is_empty:
-                # If the intersection is a point, compute the distance
-                if inter.geom_type == 'Point':
-                    d = sensor.distance(inter)
-                    if d < min_distance:
-                        min_distance = d
-                # If the intersection is a line (or collection), choose the nearest point
-                else:
-                    # Use the first coordinate as a representative (could be improved)
-                    point_candidate = Point(list(inter.coords)[0])
-                    d = sensor.distance(point_candidate)
-                    if d < min_distance:
-                        min_distance = d
-        distances.append(min_distance)
-        # Calculate the actual end point of the ray based on the detected distance
-        ray_points.append((sensor.x + min_distance * np.cos(angle),
-                           sensor.y + min_distance * np.sin(angle)))
-    return distances, ray_points
+            if obs["type"] == "circle":
+                cx, cy = obs["center"]
+                r = obs["radius"]
+                # The ray from the origin: x = t*cos(angle_rad), y = t*sin(angle_rad)
+                # Solve: (t*cos(angle_rad) - cx)^2 + (t*sin(angle_rad) - cy)^2 = r^2
+                # This expands to a quadratic in t: t^2 - 2*(cx*cos(angle_rad)+cy*sin(angle_rad))*t + (cx^2+cy^2 - r^2)=0
+                a = 1
+                b = -2 * (cx * np.cos(angle_rad) + cy * np.sin(angle_rad))
+                c = cx ** 2 + cy ** 2 - r ** 2
+                discriminant = b ** 2 - 4 * a * c
 
-# Sensor position (as a Shapely Point)
-sensor = Point(0, 0)
+                if discriminant >= 0:
+                    t1 = (-b + np.sqrt(discriminant)) / (2 * a)
+                    t2 = (-b - np.sqrt(discriminant)) / (2 * a)
+                    # Choose the smallest positive t (the first intersection along the ray)
+                    t_candidates = [t for t in [t1, t2] if t > 0]
+                    if t_candidates:
+                        t_hit = min(t_candidates)
+                        if t_hit < distance:
+                            distance = t_hit
 
-# Define obstacles (for example, a vertical line and a rectangular polygon)
-obstacle1 = LineString([(2, -1), (2, 1)])  # vertical wall at x = 2
-obstacle2 = Polygon([(4, -2), (5, -2), (5, -1), (4, -1)])  # a rectangle
-obstacles = [obstacle1, obstacle2]
+        scan_data.append((angle, distance))
 
-# Define LiDAR parameters: scanning angles (e.g., from -45° to 45°)
-angles = np.linspace(-np.pi/4, np.pi/4, 50)
+    return scan_data
 
-# Run the simulation
-distances, ray_points = simulate_lidar(sensor, angles, obstacles, max_range=10)
 
-# Visualization
-plt.figure(figsize=(8, 8))
-plt.plot(sensor.x, sensor.y, 'ro', label='Sensor')
-# Plot obstacles
-for obs in obstacles:
-    if hasattr(obs, 'exterior'):
-        plt.plot(*obs.exterior.xy, 'k-')
-    else:
-        xs, ys = zip(*list(obs.coords))
-        plt.plot(xs, ys, 'k-')
-# Plot rays
-for pt in ray_points:
-    plt.plot([sensor.x, pt[0]], [sensor.y, pt[1]], 'b-', alpha=0.3)
-plt.xlim(-1, 11)
-plt.ylim(-5, 5)
-plt.xlabel("X")
-plt.ylabel("Y")
-plt.legend()
-plt.title("2D LiDAR Simulation")
-plt.grid(True)
-plt.show()
+def plot_scan(scan_data, obstacles=None):
+    """
+    Plot the simulated LiDAR scan on a polar plot.
+    Optionally, also plot the obstacles in a separate Cartesian plot.
+    """
+    # Polar scatter plot for the LiDAR scan data
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+    angles = [np.deg2rad(point[0]) for point in scan_data]
+    distances = [point[1] for point in scan_data]
+    ax.scatter(angles, distances, s=10)
+    ax.set_title("Simulated LiDAR Scan")
+    plt.show()
+
+    # Cartesian plot to visualize obstacles
+    if obstacles:
+        fig2, ax2 = plt.subplots()
+        # Plot obstacles (assumed to be circles)
+        for obs in obstacles:
+            if obs["type"] == "circle":
+                circle = plt.Circle(obs["center"], obs["radius"], fill=False, edgecolor='r', linewidth=2)
+                ax2.add_patch(circle)
+        ax2.set_xlim(-max([obs["center"][0] for obs in obstacles] + [5000]) - 500,
+                     max([obs["center"][0] for obs in obstacles] + [5000]) + 500)
+        ax2.set_ylim(-max([obs["center"][1] for obs in obstacles] + [5000]) - 500,
+                     max([obs["center"][1] for obs in obstacles] + [5000]) + 500)
+        ax2.set_aspect('equal')
+        ax2.set_title("Obstacle Map")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.show()
+
+
+if __name__ == "__main__":
+    # Define obstacles: each obstacle is a circle with a center (x, y) and a radius.
+    obstacles = [
+        {"type": "circle", "center": (2000, 1000), "radius": 500},
+        {"type": "circle", "center": (-1500, -1500), "radius": 700},
+    ]
+
+    # Run the simulation
+    scan_data = simulate_lidar_scan(num_rays=360, max_distance=5000, obstacles=obstacles)
+    plot_scan(scan_data, obstacles=obstacles)
