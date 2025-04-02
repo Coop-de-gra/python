@@ -87,6 +87,7 @@ def plot_scan(scan_data, obstacles=None):
         plt.show()
 
 
+# this little plate here is what runs the game - its essentially the main function and everything above is preparing for it
 if __name__ == "__main__":
     # Define obstacles: each obstacle is a circle with a center (x, y) and a radius.
     obstacles = [
