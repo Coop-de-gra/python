@@ -58,7 +58,7 @@ def simulate_lidar_scan(num_rays=360, max_distance=5000, obstacles=None):
 def plot_scan(scan_data, obstacles=None):
     """
     Plot the simulated LiDAR scan on a polar plot.
-    Optionally, also plot the obstacles in a separate Cartesian plot.
+    also plot the obstacles in a separate Cartesian plot.
     """
     # Polar scatter plot for the LiDAR scan data
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
